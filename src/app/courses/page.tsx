@@ -1,21 +1,36 @@
+'use client';
 
-import { Calendar, Image as ImageIcon, Layers } from "lucide-react";
+import { adminApi } from '@/lib/api/admin';
+import { Calendar, ChevronLeft, ChevronRight, Image as ImageIcon, Layers } from "lucide-react";
+import { useEffect, useState } from 'react';
 
-async function getCourses() {
-  try {
-    const res = await fetch("http://localhost:5000/management/courses", {
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error("Failed to fetch courses");
-    return res.json();
-  } catch (error) {
-    console.error(error);
-    return null;
+export default function CoursesPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10;
+
+  useEffect(() => {
+    loadCourses();
+  }, [page]);
+
+  const loadCourses = async () => {
+    try {
+      if (page === 1) setLoading(true);
+      const coursesData = await adminApi.getCourses(page, limit);
+      setData(coursesData);
+      setTotalPages(coursesData.totalPages || 1);
+    } catch (error) {
+      console.error("Failed to load courses", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !data) {
+    return <div className="p-8 text-center">Loading courses...</div>;
   }
-}
-
-export default async function CoursesPage() {
-  const data = await getCourses();
 
   if (!data) {
     return <div className="p-8 text-center text-red-500">Failed to load courses.</div>;
@@ -27,15 +42,15 @@ export default async function CoursesPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Courses Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Courses Management</h1>
           <p className="text-gray-500 text-sm mt-1">Total: {data.total} courses</p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-            <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-700 dark:text-gray-300">
+          <table className="w-full text-left text-sm text-gray-500">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-700">
               <tr>
                 <th className="px-6 py-4 font-semibold">Course</th>
                 <th className="px-6 py-4 font-semibold">Subject</th>
@@ -43,12 +58,12 @@ export default async function CoursesPage() {
                 <th className="px-6 py-4 font-semibold">Created At</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-100">
               {courses.map((course: any) => (
-                <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <tr key={course.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-10 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="w-16 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                         {course.thumbnail ? (
                           <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -56,7 +71,7 @@ export default async function CoursesPage() {
                         )}
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">{course.title}</div>
+                        <div className="font-medium text-gray-900">{course.title}</div>
                         <div className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">
                           {course.description || "No description"}
                         </div>
@@ -65,7 +80,7 @@ export default async function CoursesPage() {
                   </td>
                   <td className="px-6 py-4">
                     {course.subject ? (
-                      <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-medium">
+                      <div className="flex items-center gap-1.5 text-indigo-600 font-medium">
                         <Layers className="w-4 h-4" />
                         {course.subject.name}
                       </div>
@@ -73,7 +88,7 @@ export default async function CoursesPage() {
                       <span className="text-gray-400 italic">No Subject</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                  <td className="px-6 py-4 font-medium text-gray-900">
                     {course.price ? (
                       new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)
                     ) : (
@@ -97,6 +112,28 @@ export default async function CoursesPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+          <div className="text-sm text-gray-500">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

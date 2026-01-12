@@ -1,31 +1,31 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
+import {
+    ClipboardCheck,
+    GraduationCap,
+    History,
+    LayoutDashboard,
+    LogOut,
+    Users
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-    LayoutDashboard,
-    ClipboardCheck,
-    Users,
-    BookOpen,
-
-    GraduationCap,
-    Book
-} from "lucide-react";
 
 const menuItems = [
     { title: "Dashboard", icon: LayoutDashboard, href: "/", active: true },
     { title: "Exams", icon: ClipboardCheck, href: "/exams" },
-    { title: "Courses", icon: Book, href: "/courses" },
-    { title: "Students", icon: Users, href: "/students" },
-    { title: "Question Bank", icon: BookOpen, href: "/question-bank" },
+    { title: "History", icon: History, href: "/histories" },
+    // { title: "Courses", icon: Book, href: "/courses" },
+    { title: "Users", icon: Users, href: "/users" },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { signOut } = useAuth();
 
     return (
         <aside className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
-            {/* Logo Section */}
             <div className="flex flex-col px-6 pt-6 pb-4">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -36,7 +36,6 @@ export function Sidebar() {
 
             </div>
 
-            {/* Navigation Menu */}
             <nav className="flex-1 px-4 py-4 space-y-1">
                 {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -58,31 +57,20 @@ export function Sidebar() {
                 })}
             </nav>
 
-            {/* User Profile Section */}
-            <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                        <svg
-                            className="w-6 h-6 text-gray-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                            Admin User
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                            admin@exams.edu
-                        </p>
-                    </div>
-                </div>
+            <div className="px-4 py-4 border-t border-gray-200">
+                <button
+                    onClick={async () => {
+                        try {
+                            await signOut();
+                        } catch (error) {
+                            console.error('Logout error:', error);
+                        }
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                >
+                    <LogOut className="w-5 h-5" />
+                    <span className="font-medium">Sign Out</span>
+                </button>
             </div>
         </aside >
     );
