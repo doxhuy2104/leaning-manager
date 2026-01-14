@@ -102,8 +102,8 @@ class ApiClient {
         });
     }
 
-    async delete<T>(endpoint: string): Promise<T> {
-        return this.request<T>(endpoint, { method: 'DELETE' });
+    async delete<T>(endpoint: string, options?: RequestInit): Promise<T> {
+        return this.request<T>(endpoint, { method: 'DELETE', ...options });
     }
 }
 

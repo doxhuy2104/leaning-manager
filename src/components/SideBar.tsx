@@ -25,7 +25,7 @@ export function Sidebar() {
     const { signOut } = useAuth();
 
     return (
-        <aside className="flex h-screen w-64 flex-col bg-white border-r border-gray-200">
+        <aside className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
             <div className="flex flex-col px-6 pt-6 pb-4">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">

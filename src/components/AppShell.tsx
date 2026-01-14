@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="fixed inset-0 flex h-full w-full overflow-hidden">
             <Sidebar />
             <div className="flex-1 flex flex-col bg-gray-50">
                 <Header />

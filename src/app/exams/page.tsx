@@ -1,9 +1,32 @@
 'use client';
 
 import { adminApi } from '@/lib/api/admin';
-import { ArrowLeft, ChevronLeft, ChevronRight, Layers, Plus, Edit } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Edit, Layers, Plus, Trash2 } from "lucide-react";
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+
+import 'katex/dist/katex.min.css';
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import remarkMath from 'remark-math';
+
+const processContent = (content: any) => {
+  if (content === null || content === undefined) return '';
+  let strContent = String(content).trim();
+
+  // Build a string that acts as a simple text if it matches numeric pattern to avoid MD list parsing
+  // E.g. "123." could be interpreted as a list start in MD if followed by space, or just generally ambiguous
+  if (/^\d+\.$/.test(strContent)) {
+    return strContent.replace('.', '\\.');
+  }
+
+  return strContent
+    .replace(/\\\(/g, '$')
+    .replace(/\\\)/g, '$')
+    .replace(/\\\[/g, '$$')
+    .replace(/\\\]/g, '$$');
+};
 
 export default function ExamsPage() {
   const [loading, setLoading] = useState(true);
@@ -67,6 +90,22 @@ export default function ExamsPage() {
       console.error("Failed to load questions", error);
     } finally {
       setQuestionsLoading(false);
+    }
+  };
+
+  const handleDeleteExam = async (e: React.MouseEvent, examId: number) => {
+    e.stopPropagation(); // Prevent row click
+    if (window.confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+      try {
+        await adminApi.deleteExam(examId);
+        // Refresh list
+        if (selectedSubject) {
+          loadExams(selectedSubject.id);
+        }
+      } catch (error) {
+        console.error('Failed to delete exam', error);
+        alert('Failed to delete exam');
+      }
     }
   };
 
@@ -180,10 +219,14 @@ export default function ExamsPage() {
                             question.type === 'true_false' ? 'True/False' : question.type}
                       </span>
                     </div>
-                    <div
-                      className="text-gray-900 font-medium mb-4"
-                      dangerouslySetInnerHTML={{ __html: question.content }}
-                    />
+                    <div className="text-gray-900 font-medium mb-4 markdown-content [&>p]:mb-4 [&>img]:my-4 [&>img]:rounded-lg [&>img]:max-h-96 [&>table]:w-full [&>table]:border-collapse [&>table]:mb-4 [&>table]:border [&>table]:border-gray-300 [&_th]:border [&_th]:border-gray-300 [&_th]:p-2 [&_th]:bg-gray-50 [&_td]:border [&_td]:border-gray-300 [&_td]:p-2">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex, rehypeRaw]}
+                      >
+                        {processContent(question.content)}
+                      </ReactMarkdown>
+                    </div>
 
                     {question.type === 'short_answer' ? (
                       <div className="text-sm text-gray-700">{question.shortAnswer}</div>
@@ -202,10 +245,17 @@ export default function ExamsPage() {
                                 : (question.type === 'true_false' ? '2px solid #ef4444' : '1px solid #e5e7eb')
                             }}
                           >
-                            <div
-                              className="text-sm text-gray-700"
-                              dangerouslySetInnerHTML={{ __html: answer.content }}
-                            />
+                            <div className="text-sm text-gray-700 [&>p]:mb-0">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath]}
+                                rehypePlugins={[rehypeKatex, rehypeRaw]}
+                                components={{
+                                  p: ({ node, ...props }) => <p className="mb-0" {...props} />
+                                }}
+                              >
+                                {processContent(answer.content)}
+                              </ReactMarkdown>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -214,10 +264,14 @@ export default function ExamsPage() {
                     {question.explanation && (
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <p className="text-sm font-medium text-gray-700 mb-1">Explanation:</p>
-                        <div
-                          className="text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: question.explanation }}
-                        />
+                        <div className="text-sm text-gray-600 [&>p]:mb-2">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex, rehypeRaw]}
+                          >
+                            {processContent(question.explanation)}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -276,11 +330,17 @@ export default function ExamsPage() {
                       onClick={() => handleExamClick(exam)}
                     >
                       <td className="px-6 py-4">
-                        <div className="flex items-start gap-3">
-
+                        <div className="flex items-start gap-3 justify-between">
                           <div>
                             <div className="font-medium text-gray-900">{exam.title}</div>
                           </div>
+                          <button
+                            onClick={(e) => handleDeleteExam(e, exam.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete Exam"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
 

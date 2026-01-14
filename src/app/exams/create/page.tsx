@@ -97,17 +97,27 @@ export default function CreateExamPage() {
 
         try {
             setUploading(true);
-            await adminApi.uploadExamPdf(parseInt(selectedSubjectId), file);
+            const response = await adminApi.uploadExamPdf(parseInt(selectedSubjectId), file);
             setSuccess(true);
-            // Redirect back - the exams page will handle showing the correct subject
+
+            // Redirect to edit page if we have an ID, otherwise fall back to exams list
+            console.log('Upload response:', response);
+            const ocrData = response?.ocrResponse;
+            const examId = ocrData?.examId || ocrData?.id || ocrData?.data?.id || ocrData?.data?.exam?.id;
+            console.log('Extracted examId:', examId);
+
             setTimeout(() => {
-                router.push('/exams');
-            }, 1500);
+                if (examId) {
+                    router.push(`/exams/${examId}/edit`);
+                } else {
+                    router.push('/exams');
+                }
+            }, 15000);
         } catch (error: any) {
             console.error('Upload failed:', error);
             setError(error.message || 'Upload thất bại. Vui lòng thử lại.');
         } finally {
-            setUploading(false);
+            // setUploading(false);
         }
     };
 
@@ -137,7 +147,7 @@ export default function CreateExamPage() {
                 </div>
             </div>
 
-            {success ? (
+            {/* {success ? (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FileText className="w-8 h-8 text-green-600" />
@@ -145,16 +155,16 @@ export default function CreateExamPage() {
                     <h2 className="text-lg font-semibold text-green-800 mb-2">Successfully uploaded!</h2>
                     <p className="text-green-600">Redirecting to exams list...</p>
                 </div>
-            ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                            {error}
-                        </div>
-                    )}
+            ) : ( */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                        {error}
+                    </div>
+                )}
 
-                    {/* Subject Selection */}
-                    {/* <div>
+                {/* Subject Selection */}
+                {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Môn học <span className="text-red-500">*</span>
                         </label>
@@ -180,78 +190,78 @@ export default function CreateExamPage() {
                         )}
                     </div> */}
 
-                    {/* File Upload */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Exam File (PDF)
-                        </label>
-                        <div
-                            onClick={() => !uploading && fileInputRef.current?.click()}
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+                {/* File Upload */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Exam File (PDF)
+                    </label>
+                    <div
+                        onClick={() => !uploading && fileInputRef.current?.click()}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
                                 ${file ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'}
                                 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
-                        >
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".pdf"
-                                onChange={handleFileChange}
-                                className="hidden"
-                                disabled={uploading}
-                            />
+                    >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleFileChange}
+                            className="hidden"
+                            disabled={uploading}
+                        />
 
-                            {file ? (
-                                <div className="flex items-center justify-center gap-4">
-                                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <p className="font-medium text-gray-900">{file.name}</p>
-                                        <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
-                                    </div>
+                        {file ? (
+                            <div className="flex items-center justify-center gap-4">
+                                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <FileText className="w-6 h-6 text-red-600" />
                                 </div>
-                            ) : (
-                                <>
-                                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-600 mb-2">
-                                        Drag and drop PDF file here or <span className="text-blue-600 font-medium">select file</span>
-                                    </p>
-                                </>
-                            )}
-                        </div>
+                                <div className="text-left">
+                                    <p className="font-medium text-gray-900">{file.name}</p>
+                                    <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-600 mb-2">
+                                    Drag and drop PDF file here or <span className="text-blue-600 font-medium">select file</span>
+                                </p>
+                            </>
+                        )}
                     </div>
+                </div>
 
-                    {/* Submit Button */}
-                    <div className="flex gap-4">
-                        {/* <Link
+                {/* Submit Button */}
+                <div className="flex gap-4">
+                    {/* <Link
                             href="/exams"
                             className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-lg font-medium text-center hover:bg-gray-50 transition-colors"
                         >
                             Hủy
                         </Link> */}
-                        <button
-                            type="submit"
-                            disabled={uploading || !file || !selectedSubjectId}
-                            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            {uploading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Uploading...
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="w-4 h-4" />
-                                    Upload Exam
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
-            )}
+                    <button
+                        type="submit"
+                        disabled={uploading || !file || !selectedSubjectId}
+                        className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        {uploading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Uploading...
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="w-4 h-4" />
+                                Upload Exam
+                            </>
+                        )}
+                    </button>
+                </div>
+            </form>
+            {/* )} */}
         </div>
     );
 }

@@ -30,37 +30,49 @@ export const adminApi = {
     },
 
     uploadExamPdf: async (subjectId: number, file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('subjectId', subjectId.toString());
-
-        // Get token from localStorage
-        let token = '';
-        if (typeof window !== 'undefined') {
-            token = localStorage.getItem('accessToken') || '';
-        }
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_BASE_URL}/admin/upload`, {
-            method: 'POST',
-            headers: {
-                'Authorization': token,
-            },
-            body: formData,
+        const { url, key } = await apiClient.post<{ url: string; key: string }>('/upload/presigned-url', {
+            fileName: file.name,
+            fileType: 'pdf',
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-            throw new Error(error.message || `Upload failed: ${response.status}`);
+        const uploadResponse = await fetch(url, {
+            method: 'PUT',
+            body: file,
+            headers: {
+                'Content-Type': file.type,
+            },
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error(`S3 Upload failed: ${uploadResponse.status}`);
         }
 
-        return response.json();
+        const ocrResponse = await apiClient.post<any>('/admin/ocr', {
+            fileName: file.name,
+            subjectId: subjectId,
+        });
+
+
+        return { ocrResponse };
     },
 
-    updateQuestion: async (questionId: number, data: { explanation?: string }, headers?: any) => {
+    updateQuestion: async (questionId: number, data: { explanation?: string; shortAnswer?: string; content?: string }, headers?: any) => {
         return apiClient.patch<any>(`/question/${questionId}`, data);
     },
 
     updateAnswer: async (answerId: number, data: { content?: string; isCorrect?: boolean }, headers?: any) => {
         return apiClient.patch<any>(`/answer/${answerId}`, data);
+    },
+
+    getImagesByExamId: async (examId: number, headers?: any) => {
+        return apiClient.get<any>(`/admin/images/exam/${examId}`, undefined, { headers });
+    },
+
+    deleteExam: async (id: number, headers?: any) => {
+        return apiClient.delete<any>(`/admin/exams/${id}`, { headers });
+    },
+
+    updateExam: async (id: number, data: any, headers?: any) => {
+        return apiClient.patch<any>(`/admin/exams/${id}`, data);
     },
 };
